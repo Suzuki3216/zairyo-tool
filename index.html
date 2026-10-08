@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15181d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="材料取り">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>材料取りツール</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark;--bg:#15181d;--inp:#15181d;--fg:#e6e8ec;--hfg:#e6e8ec;--card:#1e2229;--bd:#363c46;--ac:#6ea0ff;--plate:#2a2d33;--mut:#7a8190;--hmut:#7a8190;--fab:#176b87}
+:root[data-theme="2"]{color-scheme:light;--bg:#2563b0;--inp:#e8eaed;--fg:#1b2a3a;--hfg:#ffffff;--card:#ffffff;--bd:#bccde3;--ac:#1f6feb;--plate:#f2f6fb;--mut:#5b6e84;--hmut:#cfe0f5;--fab:#0b3b8c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif;padding:16px;max-width:980px;margin-inline:auto}
+h1{font-size:20px;margin:0 0 12px;color:var(--hfg)}
+h2{color:var(--hfg)}
+#fab{position:fixed;left:min(calc(50% + 498px),calc(100vw - 76px));top:96px;z-index:30;padding:6px 14px;color:#fff;background:var(--fab);border:1px solid var(--fab);border-radius:6px;box-shadow:0 2px 8px #0005;cursor:pointer}
+tr.tot>td{border-top:2px solid var(--fg);font-weight:bold}
+h3.t{margin:0 0 8px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:4px 8px;text-align:left;font-weight:normal}
+th{color:var(--mut);font-size:12px}
+input[type=text],select{padding:5px;border:1px solid var(--bd);border-radius:6px;background:var(--inp);color:var(--fg);font-size:14px;box-sizing:border-box}
+input:disabled,select:disabled{opacity:.4;cursor:not-allowed}
+button{padding:6px 12px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg);cursor:pointer}
+button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tank{border:1px solid var(--bd);border-radius:8px;padding:8px;margin-bottom:8px}
+.ln,.lr{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.lr{margin-bottom:6px}
+.f{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--mut)}
+.opt{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.ckw{width:36px;flex:none}
+.ls{width:150px}
+.lu{width:64px}
+.note{color:var(--mut);font-size:12px;margin-top:6px}
+.sum{font-size:16px;font-weight:bold}
+.err{color:#d33;margin:6px 0}
+svg{width:100%;height:auto;background:var(--plate);border:1px solid var(--bd);border-radius:6px;display:block}
+.pl h3{font-size:14px;margin:0 0 6px}
+.pl ul{margin:6px 0 0;padding-left:18px;font-size:12px;columns:2}
+.g3{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:6px;overflow:hidden}
+.seg button{border:none;border-radius:0;padding:6px 14px;background:var(--card);color:var(--fg)}
+.seg button.on{background:var(--ac);color:#fff}
+body[data-mode=lid] .ntk{display:none!important}
+body[data-lt=box] .lrbl{display:none!important}
+body[data-lt=plate] .bxl{display:none!important}
+body[data-mode=lid][data-lt=box] .ntk.hf{display:flex!important}
+.opt label>input[type=text]{margin:0 6px}
+#costcard label>input,#hrow label>input,#laborcard>label>input{margin-left:8px}
+body[data-mode=tank] .ltd{display:none}
+.lc{min-width:200px}
+body[data-mode=lid] .lc{min-width:300px}
+#pipeApp{display:none}
+body[data-mode=pipe] #pipeApp{display:block}
+body[data-mode=pipe] #plateApp{display:none}
+input[type=text]:not(.num){ime-mode:active}
+input.num{ime-mode:disabled}
+.sw{display:inline-block;width:10px;height:10px;margin-right:4px;border:1px solid #0004}
+
+@media (max-width:720px){
+  body{padding:10px}
+  .hdr{flex-wrap:wrap;gap:6px!important}
+  .hl{flex-wrap:wrap;gap:8px!important;margin-bottom:6px!important}
+  h1{font-size:18px}
+  .seg button{padding:8px 10px;font-size:14px}
+  .card{padding:10px}
+  input[type=text],select{font-size:16px!important}
+  button{min-height:40px}
+  #fab{left:auto!important;right:12px;top:auto!important;bottom:14px;padding:12px 22px;border-radius:26px;font-size:16px;min-height:0}
+  #p_tb input.pn{width:100px!important}
+  #p_tb input.num{width:74px!important}
+  .lc{min-width:0!important;flex-basis:100%}
+  .g3{grid-template-columns:1fr}
+  .opt{gap:8px}
+  .pl ul{columns:1}
+  td input.num{width:90px!important}
+}
+</style></head><body>
+<div class="hdr" style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div class="hl" style="display:flex;align-items:center;gap:14px;margin:0 0 12px"><h1 style="margin:0">材料取りツール</h1><div class="seg"><button id="m_tank" class="on" onclick="setMode('tank')">槽製作</button><button id="m_lid" onclick="setMode('lid')">蓋製作</button><button id="m_pipe" onclick="setMode('pipe')">パイプ加工</button></div><div class="seg" id="lidsub" style="display:none"><button id="lt_plate" class="on" onclick="setLT('plate')">板タイプ</button><button id="lt_box" onclick="setLT('box')">箱タイプ</button></div></div><div style="display:flex;align-items:center;gap:10px"><select id="thm" onchange="setTheme(this.value)" style="font-size:12px"><option value="1">Ver.1 ダーク</option><option value="2">Ver.2 ブルー</option></select><span id="ver" style="font-size:13px;color:var(--hmut);white-space:nowrap">Ver.1-30</span><img alt="Mukai" height="28" style="height:28px;width:auto;display:block" src="data:image/png;base64,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"></div></div>
+<button id="fab" onclick="doCalc()" title="入力内容を反映して再計算します">更新</button>
+<div id="plateApp">
+<div class="card">
+<div id="tb"></div>
+<div class="opt">
+<div style="display:flex;flex-direction:column;gap:6px"><button id="b_add" onclick="addRow()">＋槽を追加</button><button id="b_del" onclick="delChecked()">－槽を削除</button></div>
+<label>プレート 横<input type="text" inputmode="decimal" enterkeyhint="next" id="pw" class="num pos" value="2,000" style="width:70px"> × 縦<input type="text" inputmode="decimal" enterkeyhint="next" id="ph" class="num pos" value="1,000" style="width:70px"> mm</label>
+<label>切断代<input type="text" inputmode="decimal" enterkeyhint="next" id="kf" class="num" value="3" style="width:56px">mm</label>
+
+<button class="pri" onclick="calc()">材料取り計算</button>
+<div style="display:flex;flex-direction:column;gap:6px"><button onclick="saveData()">データ保存</button><button onclick="$('fi').click()">データ読込</button></div>
+<input type="file" id="fi" accept=".txt,.json,text/plain,application/json" style="display:none">
+<span id="msg" style="font-size:12px;color:var(--mut)"></span>
+<textarea id="jt" readonly style="display:none;width:100%;height:90px;font-size:12px"></textarea>
+</div>
+</div>
+<div id="o1"></div>
+<div class="card" id="costcard"><h3 class="t">材料金額</h3>
+<label>1mmあたり単価（プレート1枚・円）<input type="text" inputmode="decimal" enterkeyhint="next" id="up" class="num pos" placeholder="例：500" style="width:110px"></label>
+<div id="costout" style="margin-top:8px"></div>
+<div class="ltd" id="hrow" style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px">
+<div>取手個数：<b id="hn">0</b> 個<span style="font-size:12px;color:var(--mut)">　（蓋1枚あたりの個数×枚数。縦L方向に均等に配置）</span></div>
+<div style="margin-top:6px"><label>取手単価（1個・円）<input type="text" inputmode="decimal" enterkeyhint="next" id="hp" class="num pos" placeholder="例：800" style="width:110px"></label></div>
+<div id="hout" style="margin-top:6px"></div></div></div>
+<div class="card" id="laborcard"><h3 class="t">製作費用（工数）</h3>
+<label>基準工数単価（1人・1日あたり 円）<input type="text" inputmode="decimal" enterkeyhint="next" id="lp" class="num pos" placeholder="例：20,000" style="width:120px"></label>
+<div id="lrows" style="margin-top:10px"></div>
+<button onclick="addLabor()">＋工数を追加</button>
+<div id="lout" style="margin-top:8px"></div>
+<div class="note" id="lnote">製作費用＝想定製作日数×(人数×基準工数単価　または　時間×基準工数単価÷8)×数量。日数は1台あたり、「時間」は1日あたりの延べ作業時間として計算します。</div></div>
+<div class="card" id="totalcard"><h3 class="t" id="t_tot">材料金額＋工数金額（槽ごとの合計）</h3>
+<label><input type="radio" name="bm" value="sheet" checked> 必要枚数換算</label>　<label><input type="radio" name="bm" value="yield"> 歩留まり換算</label>
+<div id="tout" style="margin-top:8px"></div></div>
+<div id="o2"></div>
+</div>
+<div id="pipeApp">
+<div class="card">
+<div id="p_tb"></div>
+<div class="opt">
+<div style="display:flex;flex-direction:column;gap:6px"><button onclick="paddRow([])">＋パイプを追加</button><button onclick="pdelChecked()">－パイプを削除</button></div>
+<label>定尺長さ <input type="text" inputmode="decimal" enterkeyhint="next" id="p_pl" class="num pos" value="4,000" style="width:90px"> mm</label>
+<label>切断代 <input type="text" inputmode="decimal" enterkeyhint="next" id="p_kf" class="num" value="3" style="width:60px"> mm</label>
+<button class="pri" onclick="pcalc()">材料取り計算</button>
+<div style="display:flex;flex-direction:column;gap:6px"><button onclick="saveData()">データ保存</button><button onclick="$('fi').click()">データ読込</button></div>
+<span id="pmsg" style="font-size:12px;color:var(--mut)"></span>
+<textarea id="pjt" readonly style="display:none;width:100%;height:90px;font-size:12px"></textarea>
+</div></div>
+<div id="p_o1"></div>
+<div class="card" id="p_costcard"><h3 class="t">材料金額</h3><div id="p_costout"><div class="note">パイプを入力して「材料取り計算」を押すと、管種ごとの単価入力欄が表示されます。</div></div></div>
+<div class="card" id="p_laborcard"><h3 class="t">製作費用（工数）</h3>
+<label>基準工数単価（1人・1日あたり 円）<input type="text" inputmode="decimal" enterkeyhint="next" id="p_rt" class="num pos" placeholder="例：20,000" style="width:110px"></label>
+<div id="p_lout" style="margin-top:8px"></div>
+<div class="note">工数金額＝切断数×1カットあたり切断時間(分)÷60×基準工数単価÷8。切断時間は管種ごとに入力します。切断数は部材（切断後のパイプ）の数です。</div></div>
+<div class="card" id="p_totalcard"><h3 class="t">材料金額＋工数金額（管種ごとの合計）</h3>
+<label><input type="radio" name="pbm" value="cnt" checked> 必要本数換算</label>
+<label style="margin-left:16px"><input type="radio" name="pbm" value="yield"> 歩留まり換算</label>
+<div id="p_tout" style="margin-top:8px"></div>
+<div class="note">必要本数換算＝必要本数×単価（端材分を含む）。歩留まり換算＝使用した長さ分のみ（定尺に対する使用長さの割合×単価）。単価が未入力の管種は材料金額に含めません。</div></div>
+<div id="p_o2"></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const num=x=>+String(x??'').replace(/,/g,'');
+const gn=id=>num($(id).value);
+const rv=x=>x.classList&&x.classList.contains('num')?String(x.value).replace(/,/g,''):String(x.value);
+let MODE='tank',PREV='tank',LTYP='plate';const STORE={tank:null,lid:null,lidbox:null};
+const NN=()=>MODE==='lid'?'蓋':'槽',UN=()=>MODE==='lid'?'枚':'台';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const MINOR={1:30,2:27};
+function setTheme(n){n=String(MINOR[n]?n:1);document.documentElement.dataset.theme=n;$('ver').textContent=`Ver.${n}-${MINOR[n]}`;$('thm').value=n;try{localStorage.setItem('zt',n)}catch(_){}}
+{let n='1';try{n=localStorage.getItem('zt')||'1'}catch(_){}setTheme(n)}
+const msg=t=>{$('msg').textContent=t;$('pmsg').textContent=t};
+const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
+function fmtNum(v){
+  let s=String(v??'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248)).replace(/[．。]/g,'.').replace(/[^0-9.]/g,'');const i=s.indexOf('.');
+  let a=i<0?s:s.slice(0,i),b=i<0?'':'.'+s.slice(i+1).replace(/\./g,'');
+  a=a.replace(/^0+(?=\d)/,'');
+  return a.replace(/\B(?=(\d{3})+(?!\d))/g,',')+b;
+}
+const F=(lab,inner)=>`<label class="f">${lab}${inner}</label>`;
+const NT=h=>h.replace('<label class="f">','<label class="f ntk">'),LT=h=>h.replace('<label class="f">','<label class="f ltd">');
+const NI=(v,cls='',w=84,ph='')=>`<input type="text" inputmode="decimal" enterkeyhint="next" class="num${cls?' '+cls:''}" value="${fmtNum(v)}" style="width:${w}px"${ph?` placeholder="${ph}"`:''}>`;
+
+function addRow(n,l,w,h,q,tk,rib,rt,rw,nf,ns,nb,hs,hpit,lrb,lrt,lrh,lrp,bi){
+  const box=$('tb'),i=box.children.length,on=rib==='あり';
+  const r=document.createElement('div');r.className='tank';
+  r.innerHTML=`<div class="ln"><label class="f ckw">選択<input type="checkbox" class="ck"></label>`
+   +F('<span class="nl">槽名</span>',`<input type="text" lang="ja" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" class="nm" value="${esc(n??String.fromCharCode(65+i))}" style="width:80px">`)
+   +F('縦 L(mm)',NI(l??'','pos'))+F('横 W(mm)',NI(w??'','pos'))+F('高さ H(mm)',NI(h??'','pos')).replace('<label class="f">','<label class="f ntk hf">')
+   +F('数量',NI(q??'','',60))+F('板厚(mm)',NI(tk??'','pos',70,'任意'))
+   +`<button onclick="this.closest('.tank').remove();calc()">削除</button></div>`
+   +`<div class="ln ntk" style="margin-top:8px"><span class="ckw"></span>`
+   +F('リブ',`<select class="rs" onchange="ribChg(this)"><option value="なし"${on?'':' selected'}>なし</option><option value="あり"${on?' selected':''}>あり</option></select>`)
+   +F('リブ板厚(mm)',NI(rt??'','pos rb',90,'槽と同じ'))+F('リブ幅(mm)',NI(rw??'','pos rb',70))
+   +F('前後本数(1面)',NI(nf??'','rb',80))+F('左右本数(1面)',NI(ns??'','rb',80))+F('底本数',NI(nb??'','rb',64))+`</div>`
+   +`<div class="ln ltd" style="margin-top:8px"><span class="ckw"></span>`
+   +F('取手',`<select class="hs" onchange="hsChg(this)"><option value="なし"${hs==='あり'?'':' selected'}>なし</option><option value="あり"${hs==='あり'?' selected':''}>あり</option></select>`)
+   +F('個数（蓋1枚あたり）',NI(hpit??'','hb',110))+`</div>`
+   +`<div class="ln ltd lrbl" style="margin-top:8px"><span class="ckw"></span>`
+   +F('補強リブ',`<select class="lrs" onchange="lrbChg(this)"><option value="なし"${lrb==='あり'?'':' selected'}>なし</option><option value="あり"${lrb==='あり'?' selected':''}>あり</option></select>`)
+   +F('リブ厚さ(mm)',NI(lrt??'','pos lrf',110,'板厚と同じ'))+F('リブ高さ(mm)',NI(lrh??'','pos lrf',110))+F('側面からの位置(mm)',NI(lrp??'','lrf',140))+`</div>`
+   +`<div class="ln ltd bxl" style="margin-top:8px"><span class="ckw"></span>`
+   +F('入れ込む板（組立時）',`<select class="bis"><option value="lr"${bi==='fb'||bi==='no'?'':' selected'}>左右の板を入れ込む</option><option value="fb"${bi==='fb'?' selected':''}>前後の板を入れ込む</option><option value="no"${bi==='no'?' selected':''}>入れ込まない（全長）</option></select>`)+`</div>`;
+  box.appendChild(r);ribChg(r.querySelector('.rs'));hsChg(r.querySelector('.hs'));lrbChg(r.querySelector('.lrs'));updateLabels();
+}
+function lrbChg(sel){const on=sel.value==='あり';sel.closest('.tank').querySelectorAll('.lrf').forEach(x=>x.disabled=!on)}
+function hsChg(sel){const on=sel.value==='あり';sel.closest('.tank').querySelectorAll('.hb').forEach(x=>x.disabled=!on)}
+function ribChg(sel){const on=sel.value==='あり';sel.closest('.tank').querySelectorAll('.rb').forEach(x=>x.disabled=!on)}
+function delChecked(){[...$('tb').children].forEach(r=>{if(r.querySelector('.ck').checked)r.remove()});calc()}
+
+let _cg=null,_tanks=[];
+function addLabor(name,days,val,unit,pn,hr){
+  if(name===undefined){const used=[...document.querySelectorAll('#lrows .ls')].map(s=>s.value);const t=_tanks.find(x=>!used.includes(x.nm))||_tanks[0];name=t?t.nm:''}
+  const r=document.createElement('div');r.className='lr';
+  r.innerHTML=F('<span class="nl">槽名</span>','<select class="ls"></select>')+NT(F('製作人数／時間',`<span style="display:flex;gap:4px">${NI(val??'','lv',70)}<select class="lu"><option value="人"${unit==='時間'?'':' selected'}>人</option><option value="時間"${unit==='時間'?' selected':''}>時間</option></select></span>`))
+   +NT(F('<span class="dl">想定製作日数（1台・日）</span>',NI(days??'','ld',90)))
+   +LT(F('製作人数（名）',NI(pn??'','lpn',70,'1')))+LT(F('1枚あたり製作時間（時間）',NI(hr??'','lhr',130)))
+   +`<span class="lc" style="font-size:13px;align-self:center"></span><button onclick="this.closest('.lr').remove();updateAll()">削除</button>`;
+  r.querySelector('.ls').dataset.sel=name;$('lrows').appendChild(r);refreshLabor();updateAll();updateLabels();
+}
+function refreshLabor(){
+  const names=_tanks.map(t=>t.nm);
+  document.querySelectorAll('#lrows .ls').forEach(s=>{
+    const cur=s.dataset.sel||'';
+    let o=names.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+    if(cur&&!names.includes(cur))o=`<option value="" selected>（${esc(cur)}：該当なし）</option>`+o;
+    s.innerHTML=o;
+    if(!cur&&names.length){s.value=names[0];s.dataset.sel=names[0]}
+  });
+}
+function laborCosts(){
+  const lp=gn('lp'),by={};
+  const out=[...$('lrows').children].map(r=>{
+    const name=r.querySelector('.ls').value,days=num(r.querySelector('.ld').value),val=num(r.querySelector('.lv').value),unit=r.querySelector('.lu').value;
+    const t=_tanks.find(x=>x.nm===name);
+    if(!t||!(lp>0))return {t,cost:null};
+    if(MODE==='lid'){const pn=num(r.querySelector('.lpn').value)||1,hr=num(r.querySelector('.lhr').value),p1=pn*hr*lp/8,c=p1*t.q;by[t.ti]=(by[t.ti]||0)+c;return {t,cost:c,per1:p1}}
+    const c=days*val*(unit==='時間'?lp/8:lp)*t.q;by[t.ti]=(by[t.ti]||0)+c;return {t,cost:c};
+  });
+  return {by,out};
+}
+function updateLabor(){
+  const {out}=laborCosts(),rows=[...$('lrows').children];
+  rows.forEach((r,i)=>{const o=out[i];r.querySelector('.lc').textContent=!o.t?'（該当する'+NN()+'がありません）':o.cost===null?'':MODE==='lid'?`→ 1枚 ${yen(o.per1)}　${o.t.q}枚分 ${yen(o.cost)}`:`→ ${yen(o.cost)}（${o.t.q}${UN()}分）`});
+  const tot=out.reduce((s,o)=>s+(o.cost||0),0);
+  $('lout').innerHTML=!(gn('lp')>0)?'<div style="color:var(--mut)">基準工数単価を入力すると製作費用を算出します。</div>':rows.length?`<b>工数金額 合計：${yen(tot)}</b>`:'';
+}
+function updateCost(){
+  const el=$('costout');
+  if(!_cg||!_cg.g.length){el.innerHTML='';return}
+  const up=gn('up');
+  if(!(up>0)){el.innerHTML='<div style="color:var(--mut)">単価を入力すると材料金額を算出します。</div>';return}
+  let tm=0,ty=0,skip=false;
+  const rows=_cg.g.map(x=>{
+    const yl=x.used/(x.n*_cg.PW*_cg.PH);
+    if(!(x.t>0)){skip=true;return `<tr><td>板厚 未指定</td><td>${x.n} 枚</td><td>${(yl*100).toFixed(1)}%</td><td>—</td><td>—</td></tr>`}
+    const m=x.n*x.t*up,y=m*yl;tm+=m;ty+=y;
+    return `<tr><td>板厚 ${x.t}mm</td><td>${x.n} 枚</td><td>${(yl*100).toFixed(1)}%</td><td>${yen(m)}</td><td>${yen(y)}</td></tr>`;
+  }).join('');
+  el.innerHTML=`<div class="wrap"><table><thead><tr><th>板厚</th><th>必要枚数</th><th>歩留まり</th><th>材料金額</th><th>歩留まり基準金額</th></tr></thead><tbody>${rows}<tr class="tot"><td>合計</td><td></td><td></td><td>${yen(tm)}</td><td>${yen(ty)}</td></tr></tbody></table></div>`
+   +`<div class="note">材料金額＝必要枚数×板厚×単価。歩留まり基準金額＝材料金額×歩留まり（実際に使う面積分のみ）。単価は板厚1mm・プレート1枚（${fmtNum(_cg.PW)}×${fmtNum(_cg.PH)}mm）あたり。${skip?'板厚未指定の区分は金額を算出せず、合計にも含めません。':''}</div>`;
+}
+function updateTotal(){
+  const el=$('tout');
+  if(!_cg||!_tanks.length){el.innerHTML='';return}
+  const up=gn('up'),lp=gn('lp'),mode=document.querySelector('input[name=bm]:checked').value,mat={};
+  _cg.g.forEach(g=>{
+    if(!(g.t>0)||!(up>0))return;
+    const ar={};g.plates.forEach(pl=>pl.items.forEach(p=>{ar[p.ti]=(ar[p.ti]||0)+p.w*p.h}));
+    const gc=g.n*g.t*up;
+    Object.keys(ar).forEach(ti=>{mat[ti]=(mat[ti]||0)+(mode==='sheet'?gc*ar[ti]/g.used:ar[ti]/(_cg.PW*_cg.PH)*g.t*up)});
+  });
+  const {by}=laborCosts();let sm=0,sl=0,st=0,sh=0;const isL=MODE==='lid',hp=gn('hp');
+  const rows=_tanks.map(t=>{
+    const m=up>0?(mat[t.ti]||0):null,l=lp>0?(by[t.ti]||0):null,hc=isL?(hp>0?(t.hn||0)*t.q*hp:null):0,tt=(m||0)+(l||0)+(hc||0);sm+=m||0;sl+=l||0;sh+=hc||0;st+=tt;
+    return `<tr><td>${t.nm}</td><td>${t.q} ${UN()}</td><td>${m===null?'—':yen(m)}</td>${isL?`<td>${hc===null?'—':yen(hc)}</td>`:''}<td>${l===null?'—':yen(l)}</td><td><b>${yen(tt)}</b></td></tr>`;
+  }).join('');
+  el.innerHTML=`<div class="wrap"><table><thead><tr><th>${NN()}名</th><th>数量</th><th>材料金額（${mode==='sheet'?'必要枚数換算':'歩留まり換算'}）</th>${isL?'<th>取手金額</th>':''}<th>工数金額</th><th>合計</th></tr></thead><tbody>${rows}<tr class="tot"><td>総計</td><td></td><td>${yen(sm)}</td>${isL?`<td>${yen(sh)}</td>`:''}<td>${yen(sl)}</td><td>${yen(st)}</td></tr></tbody></table></div>`
+   +`<div class="note">必要枚数換算＝板厚ごとの材料金額（端材分を含む）を、${NN()}ごとの使用面積の比で配分。歩留まり換算＝各${NN()}の使用面積分のみ。板厚未指定の部材は材料金額に含めません。</div>`;
+}
+function updateHandle(){
+  if(MODE!=='lid')return;
+  const n=_tanks.reduce((a,t)=>a+(t.hn||0)*t.q,0),hp=gn('hp');
+  $('hn').textContent=fmtNum(n);
+  $('hout').innerHTML=hp>0?`取手金額：<b>${yen(n*hp)}</b>（${fmtNum(n)}個×${yen(hp)}）`:'<span style="color:var(--mut)">取手単価を入力すると取手金額を算出します。</span>';
+}
+function updateAll(){updateCost();updateLabor();updateTotal();updateHandle()}
+
+function tankSVG(t){
+  let {L,W,H,rw,nf,ns,nb,ti,nm,q,tk,rtt}=t;const C=Math.cos(Math.PI/6),S=0.5;
+  if(t.lid&&!t.box)H=Math.max(tk>0?tk:0,0.05*Math.max(L,W));
+  const P=(x,y,z)=>[(x-y)*C,(x+y)*S-z];
+  const d=0.14*Math.max(L,W,H);
+  const rb=t.lid&&!t.box?t.rib:null,rh=rb?rb.h:0;
+  const pts=[P(0,0,0),P(L,0,0),P(L,W,0),P(0,W,0),P(0,0,H),P(L,0,H),P(L,W,H),P(0,W,H),P(0,W+d,0),P(L,W+d,0),P(L+d,0,0),P(L+d,W,0),P(L+d,0,H),...(rb?[P(0,0,-rh),P(L,W,-rh),P(L,0,-rh),P(0,W,-rh)]:[])];
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  const mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys);
+  const VW=420,VH=300,M=40;
+  const k=Math.min((VW-2*M)/(mxx-mnx),(VH-2*M)/(mxy-mny));
+  const ox=M+((VW-2*M)-(mxx-mnx)*k)/2-mnx*k,oy=M+((VH-2*M)-(mxy-mny)*k)/2-mny*k;
+  const Q=(x,y,z)=>{const p=P(x,y,z);return [p[0]*k+ox,p[1]*k+oy]};
+  const f1=a=>a.toFixed(1);
+  const poly=(arr,f,o=1)=>`<polygon points="${arr.map(a=>Q(...a).map(f1).join(',')).join(' ')}" fill="${f}" fill-opacity="${o}" stroke="#333" stroke-width="1.2" stroke-linejoin="round"/>`;
+  const hs=l=>`hsl(${(ti*67+200)%360},60%,${l}%)`;
+  let s=`<svg viewBox="0 0 ${VW} ${VH}">`;
+  const op=rb?0.35:1;
+  if(rb){
+    const rt=Math.max(rb.t,0.022*Math.max(L,W)),p=rb.p,z0=-rh;
+    const bx2=(x,y,dx,dy)=>poly([[x,y+dy,z0],[x+dx,y+dy,z0],[x+dx,y+dy,0],[x,y+dy,0]],hs(42))+poly([[x+dx,y,z0],[x+dx,y+dy,z0],[x+dx,y+dy,0],[x+dx,y,0]],hs(50))+poly([[x,y,0],[x+dx,y,0],[x+dx,y+dy,0],[x,y+dy,0]],hs(60));
+    const bl=[[p,p,L-2*p,rt],[p,p+rt,rt,W-2*p-2*rt],[L-p-rt,p+rt,rt,W-2*p-2*rt],[p,W-p-rt,L-2*p,rt]].sort((a,b)=>(a[0]+a[2]/2+a[1]+a[3]/2)-(b[0]+b[2]/2+b[1]+b[3]/2));
+    bl.forEach(b=>{s+=bx2(...b)});
+  }
+  s+=poly([[0,0,0],[L,0,0],[L,W,0],[0,W,0]],hs(55),op);
+  s+=poly([[0,0,0],[0,W,0],[0,W,H],[0,0,H]],hs(66),op);
+  s+=poly([[0,0,0],[L,0,0],[L,0,H],[0,0,H]],hs(62),op);
+  s+=poly([[0,W,0],[L,W,0],[L,W,H],[0,W,H]],hs(78),op);
+  s+=poly([[L,0,0],[L,W,0],[L,W,H],[L,0,H]],hs(70),op);
+  if(t.lid)s+=poly([[0,0,H],[L,0,H],[L,W,H],[0,W,H]],hs(82),op);
+  if(t.lid&&t.hn>0){
+    const n=t.hn,hl=Math.min(Math.max(40,Math.min(160,W*0.5)),W*0.8),hw=Math.max(8,Math.min(24,hl/4)),hh=hw*1.9;
+    const box=(x,y,z,dx,dy,dz)=>poly([[x,y+dy,z],[x+dx,y+dy,z],[x+dx,y+dy,z+dz],[x,y+dy,z+dz]],'#2d3136')
+      +poly([[x+dx,y,z],[x+dx,y+dy,z],[x+dx,y+dy,z+dz],[x+dx,y,z+dz]],'#3a3f45')
+      +poly([[x,y,z+dz],[x+dx,y,z+dz],[x+dx,y+dy,z+dz],[x,y+dy,z+dz]],'#555b63');
+    for(let i=0;i<n;i++){
+      const x=L*(i+0.5)/n-hw/2,y0=W/2-hl/2;
+      s+=box(x,y0,H,hw,hw,hh)+box(x,y0+hl-hw,H,hw,hw,hh)+box(x,y0,H+hh-hw*0.8,hw,hl,hw*0.8);
+    }
+  }
+  const rib=(n,face)=>{let o='';for(let i=1;i<=n;i++){const z=H*i/(n+1),a=Math.max(0,z-rw/2),b=Math.min(H,z+rw/2);o+=poly(face(a,b),hs(42))}return o};
+  if(rw>0){s+=rib(nf,(a,b)=>[[0,W,a],[L,W,a],[L,W,b],[0,W,b]]);s+=rib(ns,(a,b)=>[[L,0,a],[L,W,a],[L,W,b],[L,0,b]])}
+  const ln=(a,b,dash)=>{const A=Q(...a),B=Q(...b);return `<line x1="${f1(A[0])}" y1="${f1(A[1])}" x2="${f1(B[0])}" y2="${f1(B[1])}" stroke="#c0392b" stroke-width="1.2"${dash?' stroke-dasharray="3 3"':''}/>`};
+  const dim=(e1,e2,o1,o2,txt,ang)=>{
+    const a=Q(...o1),b=Q(...o2),mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
+    const tx=ang===0?`<text x="${f1(mx+8)}" y="${f1(my)}" dy="4" font-size="13" font-weight="bold" style="fill:var(--fg)">${txt}</text>`
+      :`<text x="${f1(mx)}" y="${f1(my)}" dy="15" text-anchor="middle" transform="rotate(${ang} ${f1(mx)} ${f1(my)})" font-size="13" font-weight="bold" style="fill:var(--fg)">${txt}</text>`;
+    return ln(e1,o1,1)+ln(e2,o2,1)+ln(o1,o2)+tx};
+  s+=dim([0,W,0],[L,W,0],[0,W+d,0],[L,W+d,0],'L '+L,30);
+  s+=dim([L,0,0],[L,W,0],[L+d,0,0],[L+d,W,0],'W '+W,-30);
+  s+=dim([L,0,0],[L,0,H],[L+d,0,0],[L+d,0,H],(t.lid&&!t.box?(tk>0?'t '+tk:''):'H '+H),0);
+  s+=`<text x="10" y="18" font-size="13" font-weight="bold" style="fill:var(--fg)">${nm}　×${q}${t.lid?'枚':'台'}${tk>0?'　板厚'+tk+'mm':''}${rw>0&&rtt!==tk&&(nf||ns||nb)?'（リブ'+rtt+'mm）':''}</text>`;
+  if(rb)s+=`<text x="10" y="${VH-8}" font-size="11" style="fill:var(--fg)">補強リブ 厚さ${rb.t}　高さ${rb.h}　側面から${rb.p}（4分割）</text>`;
+  if(rw>0&&(nf||ns||nb))s+=`<text x="10" y="${VH-8}" font-size="11" style="fill:var(--fg)">リブ幅${rw} 前後${nf} 左右${ns} 底${nb}本</text>`;
+  return s+'</svg>';
+}
+
+function packGL(items,PW,PH,K){
+  // ギロチンカット方式：切断は常に、その時点の板を端から端まで直線で通し切りできる配置のみを作る（昇降盤向け）。
+  // 並べ順・詰め方・分割の向きを複数試し、プレート枚数が最少の結果を採用する。
+  const W0=PW+K,H0=PH+K;
+  const find=(pl,p,fit)=>{
+    let best=null;
+    for(let fi=0;fi<pl.free.length;fi++){const f=pl.free[fi];
+      for(let rot=0;rot<2;rot++){
+        const a=(rot?p.h:p.w)+K,b=(rot?p.w:p.h)+K;
+        if(a>f.w||b>f.h)continue;
+        const lo=Math.min(f.w-a,f.h-b),hi=Math.max(f.w-a,f.h-b);
+        const sc=(fit===0?lo*1e5+hi:fit===1?(f.w*f.h-a*b)*1e5+lo:hi*1e5+lo)+(rot?1:0);
+        if(!best||sc<best.sc)best={fi,rot,a,b,sc};
+      }
+    }
+    return best;
+  };
+  const run=(list,fit,rule)=>{
+    const plates=[];
+    for(const p of list){
+      let pl=null,c=null;
+      for(const q of plates){c=find(q,p,fit);if(c){pl=q;break}}
+      if(!c){pl={free:[{x:0,y:0,w:W0,h:H0}],items:[],cuts:[],area:0};plates.push(pl);c=find(pl,p,fit)}
+      if(!c)continue;
+      const f=pl.free.splice(c.fi,1)[0],a=c.a,b=c.b,rw=f.w-a,rh=f.h-b;
+      pl.items.push({...p,x:f.x,y:f.y,w:c.rot?p.h:p.w,h:c.rot?p.w:p.h,ow:p.w,oh:p.h});
+      pl.area+=p.w*p.h;
+      const hor=rule===2?true:rule===3?false:rule===0?(rw<=rh):(rw>rh);
+      const xl=f.x+a-K/2,yl=f.y+b-K/2;
+      if(hor){
+        if(rw>0)pl.free.push({x:f.x+a,y:f.y,w:rw,h:b});
+        if(rh>0)pl.free.push({x:f.x,y:f.y+b,w:f.w,h:rh});
+        if(rh>0)pl.cuts.push([f.x,yl,f.x+f.w,yl]);
+        if(rw>0)pl.cuts.push([xl,f.y,xl,f.y+b]);
+      }else{
+        if(rw>0)pl.free.push({x:f.x+a,y:f.y,w:rw,h:f.h});
+        if(rh>0)pl.free.push({x:f.x,y:f.y+b,w:a,h:rh});
+        if(rw>0)pl.cuts.push([xl,f.y,xl,f.y+f.h]);
+        if(rh>0)pl.cuts.push([f.x,yl,f.x+a,yl]);
+      }
+    }
+    let rot=0,cl=0;
+    plates.forEach(q=>{q.items.forEach(it=>{if(it.h>it.w)rot++});q.cuts.forEach(c=>{cl+=Math.abs(Math.min(PW,c[2])-Math.max(0,c[0]))+Math.abs(Math.min(PH,c[3])-Math.max(0,c[1]))})});
+    return {plates,score:plates.length?plates[plates.length-1].area:0,rot,cl};
+  };
+  const orders=[(a,b)=>b.w*b.h-a.w*a.h,(a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h)||b.w*b.h-a.w*a.h,(a,b)=>Math.min(b.w,b.h)-Math.min(a.w,a.h)||b.w*b.h-a.w*a.h,(a,b)=>(b.w+b.h)-(a.w+a.h),(a,b)=>b.h-a.h||b.w-a.w];
+  let best=null;
+  const better=(r,b)=>{if(!b)return true;if(r.plates.length!==b.plates.length)return r.plates.length<b.plates.length;if(r.rot!==b.rot)return r.rot<b.rot;if(Math.abs(r.cl-b.cl)>1)return r.cl<b.cl;return r.score<b.score};
+  for(const o of orders)for(let fit=0;fit<3;fit++)for(let rule=0;rule<4;rule++){
+    const r=run([...items].sort(o),fit,rule);
+    // 枚数が同じなら、部材の回転が少なく、切断の総延長が短い配置を優先する
+    if(better(r,best))best=r;
+  }
+  return best?best.plates.map(pl=>({items:pl.items,cuts:pl.cuts})):[];
+}
+function packMR(items,PW,PH,K){
+  // MaxRects法（回転可）。切断代は部材側に加算し、板を(PW+K)×(PH+K)として扱う。
+  // 部材の並べ順と配置ルールを複数試し、プレート枚数が最少の結果を採用する。
+  const W0=PW+K,H0=PH+K;
+  const cut=(f,u)=>{
+    if(u.x>=f.x+f.w||u.x+u.w<=f.x||u.y>=f.y+f.h||u.y+u.h<=f.y)return null;
+    const o=[];
+    if(u.x>f.x)o.push({x:f.x,y:f.y,w:u.x-f.x,h:f.h});
+    if(u.x+u.w<f.x+f.w)o.push({x:u.x+u.w,y:f.y,w:f.x+f.w-u.x-u.w,h:f.h});
+    if(u.y>f.y)o.push({x:f.x,y:f.y,w:f.w,h:u.y-f.y});
+    if(u.y+u.h<f.y+f.h)o.push({x:f.x,y:u.y+u.h,w:f.w,h:f.y+f.h-u.y-u.h});
+    return o;
+  };
+  const inside=(a,b)=>a.x>=b.x&&a.y>=b.y&&a.x+a.w<=b.x+b.w&&a.y+a.h<=b.y+b.h;
+  const find=(pl,p,hr)=>{
+    let best=null;
+    for(const f of pl.free)for(let rot=0;rot<2;rot++){
+      const a=(rot?p.h:p.w)+K,b=(rot?p.w:p.h)+K;
+      if(a>f.w||b>f.h)continue;
+      const lo=Math.min(f.w-a,f.h-b),hi=Math.max(f.w-a,f.h-b);
+      const sc=hr===0?lo*1e5+hi:hr===1?(f.w*f.h-a*b)*1e5+lo:hi*1e5+lo;
+      if(!best||sc<best.sc)best={x:f.x,y:f.y,a,b,rot,sc};
+    }
+    return best;
+  };
+  const run=(list,hr)=>{
+    const plates=[];
+    for(const p of list){
+      let pl=null,bp=null;
+      for(const q of plates){bp=find(q,p,hr);if(bp){pl=q;break}}
+      if(!bp){pl={free:[{x:0,y:0,w:W0,h:H0}],items:[],area:0};plates.push(pl);bp=find(pl,p,hr)}
+      if(!bp)continue;
+      const u={x:bp.x,y:bp.y,w:bp.a,h:bp.b};
+      pl.items.push({...p,x:bp.x,y:bp.y,w:bp.rot?p.h:p.w,h:bp.rot?p.w:p.h,ow:p.w,oh:p.h});
+      pl.area+=p.w*p.h;
+      let nf=[];
+      for(const f of pl.free){const r=cut(f,u);if(r)nf.push(...r);else nf.push(f)}
+      pl.free=nf.filter((f,i)=>!nf.some((g,j)=>j!==i&&inside(f,g)&&(!inside(g,f)||j<i)));
+    }
+    return {plates,score:plates.length?plates[plates.length-1].area:0};
+  };
+  const orders=[(a,b)=>b.w*b.h-a.w*a.h,(a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h)||b.w*b.h-a.w*a.h,(a,b)=>Math.min(b.w,b.h)-Math.min(a.w,a.h)||b.w*b.h-a.w*a.h,(a,b)=>(b.w+b.h)-(a.w+a.h),(a,b)=>b.h-a.h||b.w-a.w];
+  let best=null;
+  for(const o of orders)for(let hr=0;hr<3;hr++){
+    const r=run([...items].sort(o),hr);
+    if(!best||r.plates.length<best.plates.length||(r.plates.length===best.plates.length&&r.score<best.score))best=r;
+  }
+  return best?best.plates.map(pl=>({items:pl.items})):[];
+}
+function calc(){
+  const PW=gn('pw'),PH=gn('ph'),K=gn('kf');
+  if(!(PW>0&&PH>0)){msg('プレート寸法を入力してください');return}
+  const parts=[],errs=[],legend=[],tanks=[],isLid=MODE==='lid',N=NN();
+  [...$('tb').children].forEach((r,ti)=>{
+    const v=[...r.querySelectorAll('input:not(.ck),select')].map(rv);
+    const nm=v[0]||(N+(ti+1)),L=+v[1],W=+v[2],H=+v[3],q=+v[4],tk=+v[5]||0,rib=v[6]==='あり',rt=+v[7]||0,
+      rw=rib?(+v[8]||0):0,nf=rib?(+v[9]||0):0,ns=rib?(+v[10]||0):0,nb=rib?(+v[11]||0):0,rtt=rt>0?rt:tk;
+    if(isLid){const bx=LTYP==='box';if(!(L>0&&W>0&&q>0&&(!bx||H>0)))return;legend.push([nm,ti]);const rb2=!bx&&v[14]==='あり',lrt=+v[15]||0,lrh=+v[16]||0,lrp=+v[17]||0,rth=lrt||tk,rtk=lrt>0?lrt:tk;
+      const ribOk=rb2&&lrh>0&&(L-2*lrp)>0&&(W-2*lrp-2*rth)>0;
+      if(rb2&&!ribOk)errs.push(`${esc(nm)}：補強リブの寸法を確認してください（リブ高さ・側面からの位置）`);
+      tanks.push({nm,L,W,H:bx?H:0,box:bx,q,tk,ti,lid:true,hn:(v[12]==='あり'?Math.min(99,Math.floor(+v[13]||0)):0),rib:ribOk?{t:rth,h:lrh,p:lrp}:null});
+      for(let k=1;k<=q;k++){const tn=q>1?`${nm}-${k}`:nm;
+        if(!bx){parts.push({a:L,b:W,lab:tn,ti,t:tk});if(ribOk){for(let j=0;j<2;j++)parts.push({a:L-2*lrp,b:lrh,lab:`${tn} リブ長辺`,ti,t:rtk});for(let j=0;j<2;j++)parts.push({a:W-2*lrp-2*rth,b:lrh,lab:`${tn} リブ短辺`,ti,t:rtk})}}
+        else{const bm=v[18]||'lr',tt=tk>0?tk:0,fbL=bm==='fb'?L-2*tt:L,lrL=bm==='lr'?W-2*tt:W;
+          if(!(fbL>0&&lrL>0)){if(k===1)errs.push(`${esc(nm)}：入れ込む板の長さが0以下になります（板厚を確認してください）`);continue}
+          parts.push({a:L,b:W,lab:`${tn} 天板`,ti,t:tk});for(let j=0;j<2;j++)parts.push({a:fbL,b:H,lab:`${tn} 前後`,ti,t:tk});for(let j=0;j<2;j++)parts.push({a:lrL,b:H,lab:`${tn} 左右`,ti,t:tk})}}
+      return}
+    if(!(L>0&&W>0&&H>0&&q>0))return;
+    legend.push([nm,ti]);tanks.push({nm,L,W,H,q,tk,rtt,rw,nf,ns,nb,ti});
+    for(let k=1;k<=q;k++){
+      const t=q>1?`${nm}-${k}`:nm;
+      const add=(a,b,lab,n,tt=tk)=>{for(let j=0;j<n;j++)parts.push({a,b,lab:`${t} ${lab}`,ti,t:tt})};
+      add(L,W,'底',1);add(L,H,'前後',2);add(W,H,'左右',2);
+      if(rw>0){add(L,rw,'リブ前後',2*nf,rtt);add(W,rw,'リブ左右',2*ns,rtt);add(W,rw,'リブ底',nb,rtt)}
+    }
+  });
+  const ok=[];
+  parts.forEach(p=>{
+    const lo=Math.max(p.a,p.b),sh=Math.min(p.a,p.b);
+    if(lo<=PW&&sh<=PH){p.w=lo;p.h=sh;ok.push(p)}
+    else if(lo<=PH&&sh<=PW){p.w=sh;p.h=lo;ok.push(p)}
+    else errs.push(`${p.lab} (${p.a}×${p.b}) はプレート寸法を超えるため分割が必要です`);
+  });
+  const col=i=>`hsl(${(i*67+200)%360},65%,72%)`;
+  const tl=t=>t>0?`板厚 ${t}mm`:'板厚 未指定';
+  const groups=[...new Set(ok.map(p=>p.t))].sort((a,b)=>a-b).map(t=>{
+    const items=ok.filter(p=>p.t===t).sort((x,y)=>y.h-x.h||y.w-x.w);
+    const plates=packGL(items,PW,PH,K);
+    return {t,plates,n:plates.length,cnt:items.length,used:items.reduce((s,p)=>s+p.w*p.h,0)};
+  });
+  _cg={g:groups,PW,PH};_tanks=tanks;refreshLabor();
+  const totN=groups.reduce((s,g)=>s+g.n,0);
+  let h=`<div class="card"><div class="sum">必要プレート枚数 合計：${totN} 枚（${fmtNum(PW)}×${fmtNum(PH)}mm）</div>`;
+  h+=`<div class="wrap"><table style="margin-top:8px"><thead><tr><th>板厚</th><th>必要枚数</th><th>歩留まり</th><th>部材数</th></tr></thead><tbody>${groups.map(g=>`<tr><td>${tl(g.t)}</td><td>${g.n} 枚</td><td>${(g.used/(g.n*PW*PH)*100).toFixed(1)}%</td><td>${g.cnt}</td></tr>`).join('')}</tbody></table></div>`;
+  h+=errs.map(e=>`<div class="err">⚠ ${e}</div>`).join('');
+  h+='<div style="margin-top:6px">'+legend.map(([n,i])=>`<span style="margin-right:12px"><span class="sw" style="background:${col(i)}"></span>${n}</span>`).join('')+'</div><div class="note">※板取り図の赤い点線は切断線です。板を端から端まで直線で通し切りできる配置にしています（昇降盤向け）。</div></div>';
+  if(!groups.length&&!errs.length)h=`<div class="card"><div class="note">${N}の縦・横・${(!isLid||LTYP==='box')?'高さ・':''}数量を入力して「材料取り計算」または「更新」を押してください。</div></div>`;
+  $('o1').innerHTML=h;h='';
+  groups.forEach(g=>{
+    h+=`<h2 style="font-size:15px;margin:16px 0 8px">${tl(g.t)}（${g.n}枚）</h2>`;
+    g.plates.forEach((pl,i)=>{
+      const u=pl.items.reduce((s,p)=>s+p.w*p.h,0);
+      let svg=`<svg viewBox="0 0 ${PW} ${PH}">`;
+      pl.items.forEach(p=>{
+        svg+=`<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" fill="${col(p.ti)}" stroke="#333" stroke-width="3"/>`;
+        if(p.h<110&&p.h>=40&&p.w>=260){const t=`${p.lab} ${p.ow}×${p.oh}`;svg+=`<text x="${p.x+p.w/2}" y="${p.y+p.h/2}" text-anchor="middle" dominant-baseline="central" font-size="${Math.min(p.h*0.65,40,(p.w-10)/(t.length*1.05))}" fill="#111">${t}</text>`}
+        if(p.w<110&&p.w>=40&&p.h>=260){const t=`${p.lab} ${p.ow}×${p.oh}`;svg+=`<text transform="translate(${p.x+p.w/2},${p.y+p.h/2}) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-size="${Math.min(p.w*0.65,40,(p.h-10)/(t.length*1.05))}" fill="#111">${t}</text>`}
+        if(p.h>=110&&p.w>=260)svg+=`<text x="${p.x+p.w/2}" y="${p.y+p.h/2}" text-anchor="middle" font-size="${Math.min(46,p.h/3)}" fill="#111"><tspan x="${p.x+p.w/2}" dy="-0.2em">${p.lab}</tspan><tspan x="${p.x+p.w/2}" dy="1.2em">${p.ow}×${p.oh}</tspan></text>`;
+      });
+      (pl.cuts||[]).forEach(c=>{svg+=`<line x1="${Math.max(0,c[0])}" y1="${Math.max(0,c[1])}" x2="${Math.min(PW,c[2])}" y2="${Math.min(PH,c[3])}" stroke="#e74c3c" stroke-width="4" stroke-dasharray="18 12" opacity=".9"/>`});
+      svg+='</svg>';
+      h+=`<div class="card pl"><h3>${tl(g.t)} ／ プレート ${i+1} ／ 使用率 ${(u/(PW*PH)*100).toFixed(1)}%（${pl.items.length}枚取り）</h3>${svg}<ul>${pl.items.map(p=>`<li>${p.lab}：${p.ow}×${p.oh}</li>`).join('')}</ul></div>`;
+    });
+  });
+  if(tanks.length)h+=`<div class="card"><h3 class="t">${N}の${isLid?'':'3D'}イメージ（等角投影・寸法mm）</h3><div class="g3">${tanks.map(tankSVG).join('')}</div><div class="note">${isLid?(LTYP==='box'?'※箱タイプの蓋（天板＋側面4枚）です。取手は蓋1枚あたりの個数を縦L方向に均等に配置して表示しています。':'※厚みは見やすさのため強調して描いています。取手は蓋1枚あたりの個数を縦L方向に均等に配置して表示しています。'):'※リブは手前2面に表示（反対面にも同数）。底リブは図示しません。'}</div></div>`;
+  $('o2').innerHTML=h;
+  updateAll();
+}
+
+function snapRows(){
+  return {rows:[...$('tb').children].map(r=>[...r.querySelectorAll('input:not(.ck),select')].map(rv)),
+    labor:[...$('lrows').children].map(r=>[r.querySelector('.ls').value,rv(r.querySelector('.ld')),rv(r.querySelector('.lv')),r.querySelector('.lu').value,rv(r.querySelector('.lpn')),rv(r.querySelector('.lhr'))])};
+}
+function collect(){
+  const sn=snapRows(),pm=MODE==='pipe'?PREV:MODE,st={...STORE};st[SK(pm,LTYP)]=sn;
+  return {app:'pvc-nesting',version:7,mode:pm,ui:MODE,lt:LTYP,
+    plate:{pw:rv($('pw')),ph:rv($('ph')),kf:rv($('kf')),up:rv($('up')),lp:rv($('lp')),hp:rv($('hp')),bm:document.querySelector('input[name=bm]:checked').value},
+    stores:st,tanks:sn.rows,labor:sn.labor,pipe:pcollect()};
+}
+function updateLabels(){
+  const pm=MODE==='pipe'?PREV:MODE,N=pm==='lid'?'蓋':'槽',U=pm==='lid'?'枚':'台';
+  document.querySelectorAll('.nl').forEach(e=>e.textContent=N+'名');
+  document.querySelectorAll('.dl').forEach(e=>e.textContent=`想定製作日数（1${U}・日）`);
+  $('b_add').textContent=`＋${N}を追加`;$('b_del').textContent=`－${N}を削除`;
+  $('t_tot').textContent=`材料金額＋工数金額（${N}ごとの合計）`;
+  $('lnote').textContent=pm==='lid'?'製作費用（1枚）＝製作人数×1枚あたり製作時間×基準工数単価÷8。数量分は、1枚分×枚数で計算します。人数が空欄のときは1名として計算します。':`製作費用＝想定製作日数×(人数×基準工数単価　または　時間×基準工数単価÷8)×数量。日数は1${U}あたり、「時間」は1日あたりの延べ作業時間として計算します。`;
+  $('m_pipe').classList.toggle('on',MODE==='pipe');$('lidsub').style.display=MODE==='lid'?'inline-flex':'none';$('lt_plate').classList.toggle('on',LTYP==='plate');$('lt_box').classList.toggle('on',LTYP==='box');document.body.dataset.lt=LTYP;$('m_tank').classList.toggle('on',MODE==='tank');$('m_lid').classList.toggle('on',MODE==='lid');
+  document.body.dataset.mode=MODE;
+}
+function fillMode(st){
+  $('tb').innerHTML='';$('lrows').innerHTML='';
+  if(st&&st.rows&&st.rows.length)st.rows.forEach(v=>addRow(...v));else addRow('','','','','','','なし','','','','','');
+  calc();
+  if(st&&st.labor&&st.labor.length)st.labor.forEach(a=>addLabor(...a));else addLabor();
+  updateAll();updateLabels();
+}
+const SK=(m,t)=>m==='lid'&&t==='box'?'lidbox':m;
+function setMode(m){
+  if(m===MODE)return;
+  if(m==='pipe'){STORE[SK(MODE,LTYP)]=snapRows();PREV=MODE;MODE='pipe';updateLabels();return}
+  STORE[SK(MODE==='pipe'?PREV:MODE,LTYP)]=snapRows();
+  MODE=m;PREV=m;fillMode(STORE[SK(m,LTYP)]);
+}
+function setLT(t){
+  if(t===LTYP)return;
+  if(MODE!=='lid'){LTYP=t;updateLabels();return}
+  STORE[SK('lid',LTYP)]=snapRows();LTYP=t;fillMode(STORE[SK('lid',t)]);
+}
+function doCalc(){MODE==='pipe'?pcalc():calc()}
+async function saveData(){
+  const json=JSON.stringify(collect(),null,1),d=new Date(),z=n=>String(n).padStart(2,'0');
+  const first=((MODE==='pipe'?($('p_tb').querySelector('.pk')||{}).value||'パイプ':($('tb').querySelector('.nm')||{}).value||NN())).trim().replace(/[\\\/:*?"<>|\s]+/g,'_')||NN();
+  const fn=`${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}_${first}.txt`;
+  let dl=null;
+  try{dl=typeof claude!=='undefined'?await claude.use('downloads'):null}catch(_){dl=null}
+  if(dl){
+    try{await dl.save({filename:fn,data:json});msg('保存しました：'+fn);return}
+    catch(e){if(e&&e.code==='declined'){msg('保存をキャンセルしました');return}}
+  }
+  const phone=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(phone&&navigator.canShare){
+    try{const f=new File([json],fn,{type:'text/plain'});
+      if(navigator.canShare({files:[f]})){await navigator.share({files:[f]});msg('共有メニューから「ファイルに保存」などを選んでください：'+fn);return}}
+    catch(e){if(e&&e.name==='AbortError'){msg('保存をキャンセルしました');return}}
+  }
+  try{
+    const url=URL.createObjectURL(new Blob([json],{type:'text/plain;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download=fn;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+    msg('ダウンロードを開始しました：'+fn+'（保存されない場合は、下の内容をコピーしてテキストファイルに保存してください）');
+  }catch(e){msg('自動保存できないため、下の内容をコピーしてテキストファイルに保存してください')}
+  ['jt','pjt'].forEach(i=>{$(i).style.display='block';$(i).value=json});
+}
+function loadData(o){
+  if(o&&o.app==='pipe-nesting'){ploadData(o);setMode('pipe');return}
+  if(!o||o.app!=='pvc-nesting'||!Array.isArray(o.tanks))throw new Error('形式が違います');
+  MODE=o.mode==='lid'?'lid':'tank';PREV=MODE;LTYP=o.lt==='box'?'box':'plate';STORE.tank=STORE.lid=STORE.lidbox=null;
+  if(o.stores){for(const k of ['tank','lid','lidbox'])STORE[k]=o.stores[k]||null}
+  else if(o.alt&&o.alt.data&&(o.alt.mode==='tank'||o.alt.mode==='lid'))STORE[o.alt.mode]=o.alt.data;
+  document.body.dataset.mode=MODE;
+  $('tb').innerHTML='';$('lrows').innerHTML='';
+  const pl=o.plate||{};
+  $('pw').value=fmtNum(pl.pw??2000);$('ph').value=fmtNum(pl.ph??1000);$('kf').value=fmtNum(pl.kf??3);
+  $('up').value=fmtNum(pl.up??'');$('lp').value=fmtNum(pl.lp??'');$('hp').value=fmtNum(pl.hp??'');
+  document.querySelectorAll('input[name=bm]').forEach(x=>{x.checked=x.value===(pl.bm||'sheet')});
+  o.tanks.forEach(v=>{
+    if(v.length===11){const on=(+v[7]>0)&&(+v[8]||+v[9]||+v[10]);v=[...v.slice(0,6),on?'あり':'なし',...v.slice(6)]}
+    addRow(...v);
+  });
+  document.querySelectorAll('#tb .pos').forEach(x=>{if(x.value!==''&&!(num(x.value)>0)){x.value='';x.setAttribute('value','')}});
+  calc();
+  (o.labor||[]).forEach(a=>addLabor(...a));
+  updateAll();updateLabels();
+  if(o.pipe)ploadData(o.pipe);
+  if(o.ui==='pipe')setMode('pipe');
+}
+
+
+/* ===== パイプ加工 ===== */
+const nfm=n=>(Math.round(n*100)/100).toLocaleString('ja-JP',{maximumFractionDigits:2});
+const TI=(v,cls,w,ph='')=>`<input type="text" lang="ja" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next" class="${cls}" value="${esc(v)}" style="width:${w}px"${ph?` placeholder="${ph}"`:''}>`;
+const ptrows=()=>[...$('p_tb').children];
+let PR={},PM={},PMD=0,_G=[];
+const mnOf=g=>{const v=PM[g.key];return v===undefined?PMD:v};
+function paddRow(v){
+  v=v||[];
+  const r=document.createElement('div');r.className='tank';
+  let h=`<div class="ln"><label class="f ckw">選択<input type="checkbox" class="ck"></label>`
+   +F('管種・呼び径',TI(v[0]??'','pk',140,'例：VP50'))
+   +`<button onclick="this.closest('.tank').remove();pcalc()">削除</button></div>`;
+  for(let i=0;i<5;i++){
+    const nm=v[1+3*i]??'',len=v[2+3*i]??'',q=v[3+3*i]??'';
+    h+=`<div class="ln" style="margin-top:6px"><span class="ckw" style="text-align:right;color:var(--mut);font-size:12px;align-self:center">${i+1}</span>`
+     +(i===0?F('名称・用途（任意）',TI(nm,'pn',170)):TI(nm,'pn',170))
+     +(i===0?F('切断長さ(mm)',NI(len,'pos',110)):NI(len,'pos',110))
+     +(i===0?F('本数',NI(q,'pos',80)):NI(q,'pos',80))+`</div>`;
+  }
+  r.innerHTML=h;$('p_tb').appendChild(r);
+}
+function pdelChecked(){ptrows().forEach(r=>{if(r.querySelector('.ck').checked)r.remove()});pcalc()}
+function pack1D(pieces,L,K){
+  const C=L+K,sz=p=>p.len+K,total=pieces.reduce((a,p)=>a+sz(p),0),lb=Math.ceil(total/C-1e-9);
+  const run=(list,mode)=>{
+    const bins=[];
+    for(const p of list){
+      const s=sz(p);let bi=-1,bs=1e18;
+      for(let i=0;i<bins.length;i++){const rem=bins[i].rem-s;if(rem>=0){if(mode===0){bi=i;break}if(rem<bs){bs=rem;bi=i}}}
+      if(bi<0){bins.push({rem:C,items:[]});bi=bins.length-1}
+      bins[bi].rem-=s;bins[bi].items.push(p);
+    }
+    return bins;
+  };
+  const score=b=>b.length*1e7-Math.max(...b.map(x=>x.rem));
+  let best=null;const take=b=>{if(!best||score(b)<score(best))best=b};
+  const base=[...pieces].sort((a,b)=>b.len-a.len);
+  take(run(base,0));take(run(base,1));
+  for(let it=0;it<300&&best.length>lb;it++){
+    const jit=base.map(p=>({p,k:p.len*(1+(Math.random()-0.5)*0.35)})).sort((a,b)=>b.k-a.k).map(x=>x.p);
+    take(run(jit,it%2));
+  }
+  return best;
+}
+const pcol=i=>`hsl(${(i*67+200)%360},65%,72%)`;
+const OD={13:18,16:22,20:26,25:32,30:38,40:48,50:60,65:76,75:89,100:114,125:140,150:165,200:216,250:267,300:318};
+function pipe3D(key,it,LM){
+  const C=Math.cos(Math.PI/6),S=0.5,len=it.len;
+  LM=LM||len;
+  const mm=(key.match(/\d+/)||[])[0];
+  let D=OD[+mm]||LM*0.14;D=Math.min(Math.max(D,LM*0.07),LM*0.3);
+  const R=D/2,r=R*0.8,d=Math.max(R*0.9,LM*0.06);
+  const P=(x,y,z)=>[(x-y)*C,(x+y)*S-z];
+  const ell=(x,rad,n=40)=>{const a=[];for(let i=0;i<n;i++){const t=i/n*2*Math.PI;a.push(P(x,rad*Math.cos(t),rad*Math.sin(t)))}return a};
+  const pts=[...ell(0,R),...ell(LM,R),P(0,R+d,0),P(LM,R+d,0)];
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  const mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys);
+  const VW=420,VH=300,M=44;
+  const k=Math.min((VW-2*M)/(mxx-mnx),(VH-2*M)/(mxy-mny));
+  const ox=M+((VW-2*M)-(mxx-mnx)*k)/2-mnx*k,oy=M+((VH-2*M)-(mxy-mny)*k)/2-mny*k;
+  const T=p=>[p[0]*k+ox,p[1]*k+oy],f1=a=>a.toFixed(1);
+  const path=a=>a.map(p=>T(p).map(f1).join(',')).join(' ');
+  const hue=(it.ri*67+200)%360,hs=l=>`hsl(${hue},45%,${l}%)`;
+  let s=`<svg viewBox="0 0 ${VW} ${VH}">`;
+  const N=96;
+  for(let i=0;i<=N;i++){const c=path(ell(len*i/N,R));s+=`<polygon points="${c}" fill="${hs(66)}" stroke="${hs(66)}" stroke-width="1"/>`}
+  const sp=Math.SQRT1_2*R;
+  for(const [y,z] of [[sp,-sp],[-sp,sp]]){const a=T(P(0,y,z)),b=T(P(len,y,z));s+=`<line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#333" stroke-width="1.2"/>`}
+  s+=`<polygon points="${path(ell(0,R))}" fill="none" stroke="#333" stroke-width="1" stroke-opacity=".45"/>`;
+  s+=`<polygon points="${path(ell(len,R))}" fill="${hs(84)}" stroke="#333" stroke-width="1.2"/>`;
+  s+=`<polygon points="${path(ell(len,r))}" fill="${hs(30)}" stroke="#333" stroke-width="1.2"/>`;
+  const ln=(a,b,dash)=>{const A=T(a),B=T(b);return `<line x1="${f1(A[0])}" y1="${f1(A[1])}" x2="${f1(B[0])}" y2="${f1(B[1])}" stroke="#c0392b" stroke-width="1.2"${dash?' stroke-dasharray="3 3"':''}/>`};
+  const o1=P(0,R+d,0),o2=P(len,R+d,0),a=T(o1),b=T(o2),mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
+  s+=ln(P(0,R,0),o1,1)+ln(P(len,R,0),o2,1)+ln(o1,o2)
+    +`<text x="${f1(mx)}" y="${f1(my)}" dy="15" text-anchor="middle" transform="rotate(30 ${f1(mx)} ${f1(my)})" font-size="13" font-weight="bold" style="fill:var(--fg)">L ${nfm(len)}</text>`;
+  s+=`<text x="10" y="18" font-size="13" font-weight="bold" style="fill:var(--fg)">${esc(key)}　${esc(it.nm)}　×${it.q}本</text>`;
+  return s+'</svg>';
+}
+function pcalc(){
+  const L=num($('p_pl').value),K=num($('p_kf').value)||0,errs=[],groups=new Map(),legend=new Map();
+  ptrows().forEach((r,bi)=>{
+    const v=[...r.querySelectorAll('input:not(.ck)')].map(rv);
+    const key=(v[0]||'').trim()||'未指定';
+    for(let i=0;i<5;i++){
+      const nm=(v[1+3*i]||'').trim(),len=+v[2+3*i]||0,q=Math.floor(+v[3+3*i]||0),ri=bi*5+i;
+      if(!(len>0&&q>0))continue;
+      legend.set(ri,nm||key+' '+nfm(len)+'mm');
+      if(!(L>0)){errs.push('定尺長さを入力してください');continue}
+      if(len>L){errs.push(`${esc(key)} ${esc(nm)} ${nfm(len)}mm は定尺${nfm(L)}mmを超えるため切断できません`);continue}
+      let g=groups.get(key);if(!g){g={key,pieces:[],items:new Map()};groups.set(key,g)}
+      {const ik=nm+'|'+len,o=g.items.get(ik);if(o)o.q+=q;else g.items.set(ik,{nm,len,q,ri})}
+      for(let k=0;k<q;k++)g.pieces.push({nm,len,ri});
+    }
+  });
+  _G=[...groups.values()].map(g=>{
+    const bins=pack1D(g.pieces,L,K),used=g.pieces.reduce((a,p)=>a+p.len,0),pat=new Map();
+    bins.forEach(b=>{
+      const it=[...b.items].sort((x,y)=>y.len-x.len||x.nm.localeCompare(y.nm));
+      const k=it.map(p=>p.nm+':'+p.len).join('|');
+      if(!pat.has(k))pat.set(k,{items:it,n:0,left:b.rem});
+      pat.get(k).n++;
+    });
+    return {key:g.key,n:bins.length,used,cuts:g.pieces.length,L,K,pats:[...pat.values()],items:[...g.items.values()]};
+  });
+  const totN=_G.reduce((a,g)=>a+g.n,0);
+  let h='';
+  if(!_G.length&&!errs.length)h='<div class="card"><div class="note">管種・呼び径、切断長さ、本数を入力して「材料取り計算」または「更新」を押してください。</div></div>';
+  else{
+    h=`<div class="card"><div class="sum">必要パイプ本数 合計：${totN} 本（定尺 ${nfm(L)}mm）</div>`
+     +`<div class="wrap"><table style="margin-top:8px"><thead><tr><th>管種・呼び径</th><th>切断数</th><th>必要本数</th><th>歩留まり</th><th>端材合計</th></tr></thead><tbody>${_G.map(g=>`<tr><td>${esc(g.key)}</td><td>${g.cuts}</td><td>${g.n} 本</td><td>${(g.used/(g.n*L)*100).toFixed(1)}%</td><td>${nfm(g.n*L-g.used)} mm</td></tr>`).join('')}</tbody></table></div>`
+     +errs.map(e=>`<div class="err">⚠ ${e}</div>`).join('')
+     +'<div style="margin-top:6px">'+[...legend].map(([i,n])=>`<span style="margin-right:12px"><span class="sw" style="background:${pcol(i)}"></span>${esc(n)}</span>`).join('')+'</div></div>';
+  }
+  $('p_o1').innerHTML=h;
+  $('p_costout').innerHTML=_G.length?`<div class="wrap"><table><thead><tr><th>管種・呼び径</th><th>必要本数</th><th>歩留まり</th><th>単価（1本・円）</th><th>材料金額</th><th>歩留まり基準金額</th></tr></thead><tbody>${_G.map((g,i)=>`<tr><td>${esc(g.key)}</td><td>${g.n} 本</td><td>${(g.used/(g.n*L)*100).toFixed(1)}%</td><td><input type="text" inputmode="decimal" enterkeyhint="next" class="num pos pr" data-k="${esc(g.key)}" value="${fmtNum(PR[g.key]??'')}" placeholder="例：2,500" style="width:110px"></td><td id="pmt${i}">—</td><td id="pmy${i}">—</td></tr>`).join('')}<tr class="tot"><td>合計</td><td></td><td></td><td></td><td id="pmtt">—</td><td id="pmyt">—</td></tr></tbody></table></div><div class="note">材料金額＝必要本数×単価。歩留まり基準金額＝材料金額×歩留まり（実際に使う長さ分のみ）。</div>`:'<div class="note">パイプを入力して「材料取り計算」を押すと、管種ごとの単価入力欄が表示されます。</div>';
+  $('p_lout').innerHTML=_G.length?`<div class="wrap"><table><thead><tr><th>管種・呼び径</th><th>切断数</th><th>1カットあたり切断時間（分）</th><th>切断時間</th><th>工数金額</th></tr></thead><tbody>${_G.map((g,i)=>`<tr><td>${esc(g.key)}</td><td>${g.cuts}</td><td><input type="text" inputmode="decimal" enterkeyhint="next" class="num pos pm" data-k="${esc(g.key)}" value="${fmtNum(PM[g.key]??(PMD>0?PMD:''))}" placeholder="例：3" style="width:90px"></td><td id="plt${i}">—</td><td id="plc${i}">—</td></tr>`).join('')}<tr class="tot"><td>合計</td><td></td><td></td><td id="pltt">—</td><td id="plct">—</td></tr></tbody></table></div>`:'';
+  let o='';
+  _G.forEach(g=>{
+    o+=`<h2 style="font-size:15px;margin:16px 0 8px">${esc(g.key)}（${g.n}本）</h2>`;
+    g.pats.forEach((p,pi)=>{
+      const fs=L/72,H=fs*3.4;let x=0,svg=`<svg viewBox="0 0 ${L} ${H}"><rect x="0" y="0" width="${L}" height="${H}" fill="none"/>`;
+      p.items.forEach(it=>{
+        svg+=`<rect x="${x}" y="${H*0.12}" width="${it.len}" height="${H*0.76}" fill="${pcol(it.ri)}" stroke="#333" stroke-width="${fs/9}"/>`;
+        if(it.len>=fs*5){
+          svg+=`<text x="${x+it.len/2}" y="${H/2}" text-anchor="middle" dominant-baseline="${it.nm&&it.len>=fs*7?'auto':'central'}" font-size="${fs}" fill="#111">${nfm(it.len)}</text>`;
+          if(it.nm&&it.len>=fs*7)svg+=`<text x="${x+it.len/2}" y="${H/2+fs*0.95}" text-anchor="middle" font-size="${fs*0.72}" fill="#111">${esc(it.nm)}</text>`;
+        }
+        x+=it.len+g.K;
+      });
+      if(p.left>0&&L-x>=fs*3)svg+=`<text x="${x+(L-x)/2}" y="${H/2}" text-anchor="middle" dominant-baseline="central" font-size="${fs*0.8}" style="fill:var(--mut)">端材 ${nfm(p.left)}</text>`;
+      svg+='</svg>';
+      o+=`<div class="card pl"><h3>${esc(g.key)} ／ パターン${pi+1} ／ ${p.n}本　使用率 ${((L-p.left)/L*100).toFixed(1)}%（${p.items.length}カット・端材 ${nfm(p.left)}mm）</h3>${svg}<ul>${p.items.map(it=>`<li>${esc(it.nm||'—')}：${nfm(it.len)}mm</li>`).join('')}</ul></div>`;
+    });
+    if(g.items.length)o+=`<div class="card"><h3 class="t">${esc(g.key)}　切断パイプの3Dイメージ（寸法mm）</h3><div class="g3">${g.items.map(it=>pipe3D(g.key,it,Math.max(...g.items.map(x=>x.len)))).join('')}</div><div class="note">※太さ・肉厚は見やすさのため強調して描いています。</div></div>`;
+  });
+  $('p_o2').innerHTML=o;
+  pupdateMoney();
+}
+function pupdateMoney(){
+  const rate=num($('p_rt').value),mode=document.querySelector('input[name=pbm]:checked').value;
+  let tm=0,ty=0;
+  _G.forEach((g,i)=>{
+    const pr=PR[g.key]||0,m=pr>0?g.n*pr:null,y=pr>0?pr*g.used/g.L:null;
+    const a=$('pmt'+i),b=$('pmy'+i);if(a)a.textContent=m===null?'—':yen(m);if(b)b.textContent=y===null?'—':yen(y);
+    tm+=m||0;ty+=y||0;
+  });
+  if($('pmtt')){$('pmtt').textContent=yen(tm);$('pmyt').textContent=yen(ty)}
+  let tl=0,tt=0,tmm=0,tth=0;
+  _G.forEach((g,i)=>{
+    const mn=mnOf(g),c=rate>0&&mn>0?g.cuts*mn/60*rate/8:null;tl+=c||0;tth+=mn>0?g.cuts*mn/60:0;
+    const a=$('plt'+i),b=$('plc'+i);if(a)a.textContent=mn>0?(g.cuts*mn/60).toFixed(1)+' 時間':'—';if(b)b.textContent=c===null?'—':yen(c);
+  });
+  if($('pltt')){$('pltt').textContent=tth>0?tth.toFixed(1)+' 時間':'—';$('plct').textContent=yen(tl)}
+  const rows=_G.map(g=>{
+    const pr=PR[g.key]||0,m=pr>0?(mode==='cnt'?g.n*pr:pr*g.used/g.L):null;
+    const mn=mnOf(g),c=rate>0&&mn>0?g.cuts*mn/60*rate/8:null,t=(m||0)+(c||0);tmm+=m||0;tt+=t;
+    return `<tr><td>${esc(g.key)}</td><td>${g.n} 本</td><td>${m===null?'—':yen(m)}</td><td>${c===null?'—':yen(c)}</td><td><b>${yen(t)}</b></td></tr>`;
+  }).join('');
+  $('p_tout').innerHTML=_G.length?`<div class="wrap"><table><thead><tr><th>管種・呼び径</th><th>必要本数</th><th>材料金額（${mode==='cnt'?'必要本数換算':'歩留まり換算'}）</th><th>工数金額</th><th>合計</th></tr></thead><tbody>${rows}<tr class="tot"><td>総計</td><td></td><td>${yen(tmm)}</td><td>${yen(tl)}</td><td><b>${yen(tt)}</b></td></tr></tbody></table></div>`:'';
+}
+function pcollect(){
+  return {app:'pipe-nesting',version:2,
+    set:{pl:rv($('p_pl')),kf:rv($('p_kf')),rt:rv($('p_rt')),mn:PMD>0?String(PMD):'',bm:document.querySelector('input[name=pbm]:checked').value},times:PM,
+    rows:ptrows().map(r=>[...r.querySelectorAll('input:not(.ck)')].map(rv)),prices:PR};
+}
+function ploadData(o){
+  if(!o||o.app!=='pipe-nesting'||!Array.isArray(o.rows))throw new Error('形式が違います');
+  const s=o.set||{};$('p_pl').value=fmtNum(s.pl??4000);$('p_kf').value=fmtNum(s.kf??3);$('p_rt').value=fmtNum(s.rt??'');PMD=num(s.mn)||0;PM=o.times||{};
+  document.querySelectorAll('input[name=pbm]').forEach(x=>{x.checked=x.value===(s.bm||'cnt')});
+  PR=o.prices||{};$('p_tb').innerHTML='';
+  (o.rows.length?o.rows:[[]]).forEach(v=>paddRow(v.length===4?[v[0],v[1],v[2],v[3]]:v));
+  pcalc();
+}
+
+document.addEventListener('input',e=>{
+  const t=e.target,cl=t.classList;
+  if(cl&&cl.contains('num')&&!e.isComposing){
+    if(t.value.includes('-'))msg('0以下の値は入力できません');
+    const pos=t.selectionStart,cnt=t.value.slice(0,pos).replace(/[^0-9.]/g,'').length;
+    t.value=fmtNum(t.value);
+    let k=0,c=0;while(k<t.value.length&&c<cnt){if(/[0-9.]/.test(t.value[k]))c++;k++}
+    try{t.setSelectionRange(k,k)}catch(_){}
+  }
+  if(t.type==='checkbox')t.toggleAttribute('checked',t.checked);
+  else if(t.type==='radio')document.querySelectorAll(`input[name=${t.name}]`).forEach(x=>x.toggleAttribute('checked',x.checked));
+  else if(t.tagName==='INPUT')t.setAttribute('value',t.value);
+  else if(t.tagName==='SELECT'){t.querySelectorAll('option').forEach(o=>o.toggleAttribute('selected',o.value===t.value));if(cl.contains('ls'))t.dataset.sel=t.value}
+  if(cl&&cl.contains('pr')){PR[t.dataset.k]=num(t.value);pupdateMoney()}
+  else if(cl&&cl.contains('pm')){PM[t.dataset.k]=num(t.value);pupdateMoney()}
+  else if(t.closest&&t.closest('#p_laborcard,#p_totalcard'))pupdateMoney();
+  else if(t.closest&&t.closest('#costcard,#laborcard,#totalcard'))updateAll();
+});
+document.addEventListener('compositionend',e=>{const t=e.target;if(t.classList&&t.classList.contains('num'))t.dispatchEvent(new Event('input',{bubbles:true}))});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||e.isComposing||e.keyCode===229)return;
+  const t=e.target;
+  if(!((t.tagName==='INPUT'&&t.type==='text')||t.tagName==='SELECT'))return;
+  if(t.id==='thm')return;
+  e.preventDefault();
+  const list=[...document.querySelectorAll('input[type=text],select')].filter(x=>!x.disabled&&x.id!=='thm'&&x.id!=='jt'&&x.offsetParent!==null);
+  const nx=list[list.indexOf(t)+1];
+  if(nx){nx.focus();if(nx.select){try{nx.select()}catch(_){}}}else{t.blur();doCalc()}
+});
+document.addEventListener('change',e=>{
+  const t=e.target,cl=t.classList;
+  if(cl&&cl.contains('pos')&&t.value!==''&&!(num(t.value)>0)){t.value='';t.setAttribute('value','');msg('0以下の値は入力できません');if(cl.contains('pr')){PR[t.dataset.k]=0;pupdateMoney()}if(cl.contains('pm')){PM[t.dataset.k]=0;pupdateMoney()}}
+  if(t.name==='pbm')pupdateMoney();
+  if(cl&&cl.contains('nm'))calc();
+  else if(t.closest&&t.closest('#costcard,#laborcard,#totalcard'))updateAll();
+});
+$('fi').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{loadData(JSON.parse(await f.text()));msg('読み込みました：'+f.name)}catch(err){msg('読み込めませんでした（'+err.message+'）')}
+  e.target.value='';
+});
+if(!$('tb').children.length&&!$('lrows').children.length){
+  addRow('','','','','','','なし','','','','','');
+  addLabor();
+}
+calc();
+if(!ptrows().length)paddRow([]);
+pcalc();
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script></body></html>
